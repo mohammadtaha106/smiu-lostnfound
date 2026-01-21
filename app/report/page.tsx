@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { categories, locations } from "@/lib/data";
+import { itemSchema, type ItemFormData } from "@/lib/validations";
+import { z } from "zod";
+import { createPost } from "@/actions/post.actions";
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -49,13 +52,44 @@ export default function ReportPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Replace your existing handleSubmit with this:
+
+    const handleSubmit = async (data: ItemFormData, imageFile: File | null) => {
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setIsSubmitting(false);
-        setSubmitted(true);
+
+        try {
+            const formData = new FormData();
+
+            formData.append("title", data.title);
+            formData.append("description", data.description);
+            formData.append("category", data.category);
+            formData.append("location", data.location);
+            formData.append("date", data.date);
+            formData.append("time", data.time || "");
+            formData.append("email", data.email);
+            formData.append("type", activeTab.toUpperCase());
+
+            if (imageFile) {
+                formData.append("image", imageFile);
+                console.log("📸 Image attached to FormData");
+            }
+
+            console.log("🚀 Calling createPost with data:", Object.fromEntries(formData));
+            const result = await createPost(formData);
+
+            if (result.success) {
+                console.log("✅ Success:", result.message);
+                setSubmitted(true);
+            } else {
+                console.error("❌ Error:", result.error);
+                alert("Error submitting form. Check console.");
+            }
+        } catch (error) {
+            console.error("📂 Submission failed:", error);
+            alert("Failed to connect to server");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (submitted) {
@@ -193,32 +227,81 @@ export default function ReportPage() {
 
 interface ReportFormProps {
     type: "lost" | "found";
-    onSubmit: (e: React.FormEvent) => void;
+    onSubmit: (formData: ItemFormData, image: File | null) => void;
     isSubmitting: boolean;
 }
 
 function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
     const isLost = type === "lost";
+    const [errors, setErrors] = useState<Partial<Record<keyof ItemFormData, string>>>({});
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [formData, setFormData] = useState<Partial<ItemFormData>>({
+        title: "",
+        category: "",
+        location: "",
+        date: "",
+        time: "",
+        description: "",
+        email: "",
+
+    });
+
+    const handleInputChange = (field: keyof ItemFormData, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        // Clear error for this field as the user types
+        if (errors[field]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[field];
+                return newErrors;
+            });
+        }
+    };
+
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const result = itemSchema.safeParse(formData);
+
+        if (result.success) {
+            onSubmit(result.data, selectedImage);
+        } else {
+            const fieldErrors: Partial<Record<keyof ItemFormData, string>> = {};
+            result.error.issues.forEach((issue: z.ZodIssue) => {
+                if (issue.path[0]) {
+                    fieldErrors[issue.path[0] as keyof ItemFormData] = issue.message;
+                }
+            });
+            setErrors(fieldErrors);
+        }
+    };
 
     return (
         <motion.form
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            onSubmit={onSubmit}
+            onSubmit={handleFormSubmit}
             className="space-y-6"
         >
             {/* Title */}
             <motion.div variants={itemVariants} className="space-y-2">
-                <Label htmlFor="title" className="text-smiu-navy">
+                <Label htmlFor="title" className="text-smiu-navy font-semibold">
                     Item Title *
                 </Label>
                 <Input
                     id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
                     placeholder={isLost ? "e.g., Black Leather Wallet" : "e.g., Student ID Card"}
-                    required
-                    className="border-border focus-visible:ring-smiu-navy"
+                    className={`border-border focus-visible:ring-smiu-navy ${errors.title ? "border-red-500" : ""}`}
                 />
+                {errors.title && (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.title}
+                    </p>
+                )}
             </motion.div>
 
             {/* Category & Location Row */}
@@ -227,9 +310,12 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                 className="grid grid-cols-1 sm:grid-cols-2 gap-4"
             >
                 <div className="space-y-2">
-                    <Label className="text-smiu-navy">Category *</Label>
-                    <Select required>
-                        <SelectTrigger className="border-border focus:ring-smiu-navy">
+                    <Label className="text-smiu-navy font-semibold">Category *</Label>
+                    <Select
+                        value={formData.category}
+                        onValueChange={(val) => handleInputChange("category", val)}
+                    >
+                        <SelectTrigger className={`border-border focus:ring-smiu-navy ${errors.category ? "border-red-500" : ""}`}>
                             <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -241,12 +327,21 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                             ))}
                         </SelectContent>
                     </Select>
+                    {errors.category && (
+                        <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.category}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-smiu-navy">Location *</Label>
-                    <Select required>
-                        <SelectTrigger className="border-border focus:ring-smiu-navy">
+                    <Label className="text-smiu-navy font-semibold">Location *</Label>
+                    <Select
+                        value={formData.location}
+                        onValueChange={(val) => handleInputChange("location", val)}
+                    >
+                        <SelectTrigger className={`border-border focus:ring-smiu-navy ${errors.location ? "border-red-500" : ""}`}>
                             <SelectValue placeholder="Where was it?" />
                         </SelectTrigger>
                         <SelectContent>
@@ -257,6 +352,12 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                             ))}
                         </SelectContent>
                     </Select>
+                    {errors.location && (
+                        <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.location}
+                        </p>
+                    )}
                 </div>
             </motion.div>
 
@@ -266,24 +367,33 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                 className="grid grid-cols-1 sm:grid-cols-2 gap-4"
             >
                 <div className="space-y-2">
-                    <Label htmlFor="date" className="text-smiu-navy">
+                    <Label htmlFor="date" className="text-smiu-navy font-semibold">
                         Date *
                     </Label>
                     <Input
                         id="date"
                         type="date"
-                        required
-                        className="border-border focus-visible:ring-smiu-navy"
+                        value={formData.date}
+                        onChange={(e) => handleInputChange("date", e.target.value)}
+                        className={`border-border focus-visible:ring-smiu-navy ${errors.date ? "border-red-500" : ""}`}
                     />
+                    {errors.date && (
+                        <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.date}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="time" className="text-smiu-navy">
+                    <Label htmlFor="time" className="text-smiu-navy font-semibold">
                         Approximate Time
                     </Label>
                     <Input
                         id="time"
                         type="time"
+                        value={formData.time}
+                        onChange={(e) => handleInputChange("time", e.target.value)}
                         className="border-border focus-visible:ring-smiu-navy"
                     />
                 </div>
@@ -291,42 +401,57 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
 
             {/* Description */}
             <motion.div variants={itemVariants} className="space-y-2">
-                <Label htmlFor="description" className="text-smiu-navy">
+                <Label htmlFor="description" className="text-smiu-navy font-semibold">
                     Description *
                 </Label>
                 <Textarea
                     id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
                     placeholder={
                         isLost
                             ? "Describe your lost item in detail (color, brand, distinguishing features)..."
                             : "Describe what you found in detail (color, brand, distinguishing features)..."
                     }
-                    required
                     rows={4}
-                    className="border-border focus-visible:ring-smiu-navy resize-none"
+                    className={`border-border focus-visible:ring-smiu-navy resize-none ${errors.description ? "border-red-500" : ""}`}
                 />
+                {errors.description && (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.description}
+                    </p>
+                )}
             </motion.div>
 
             {/* Image Upload */}
             <motion.div variants={itemVariants}>
-                <ImageUpload />
+                <ImageUpload onImageChange={(file) => setSelectedImage(file)} />
             </motion.div>
 
             {/* Contact Email */}
             <motion.div variants={itemVariants} className="space-y-2">
-                <Label htmlFor="email" className="text-smiu-navy">
+                <Label htmlFor="email" className="text-smiu-navy font-semibold">
                     Contact Email *
                 </Label>
                 <Input
                     id="email"
                     type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
                     placeholder="your.email@smiu.edu.pk"
-                    required
-                    className="border-border focus-visible:ring-smiu-navy"
+                    className={`border-border focus-visible:ring-smiu-navy ${errors.email ? "border-red-500" : ""}`}
                 />
-                <p className="text-xs text-muted-foreground">
-                    We&apos;ll use this to notify you when someone responds.
-                </p>
+                {errors.email ? (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.email}
+                    </p>
+                ) : (
+                    <p className="text-xs text-muted-foreground">
+                        We&apos;ll use this to notify you when someone responds.
+                    </p>
+                )}
             </motion.div>
 
             {/* Submit Button */}
@@ -338,17 +463,17 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                         className={`w-full ${isLost
                             ? "bg-smiu-burgundy hover:bg-smiu-burgundy/90"
                             : "bg-emerald-600 hover:bg-emerald-600/90"
-                            } text-white py-6 text-lg`}
+                            } text-white py-6 text-lg font-bold shadow-lg shadow-smiu-navy/10`}
                     >
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Submitting...
+                                Submitting Report...
                             </>
                         ) : (
                             <>
                                 <Send className="mr-2 h-5 w-5" />
-                                {isLost ? "Report Lost Item" : "Report Found Item"}
+                                {isLost ? "Submit Lost Report" : "Submit Found Report"}
                             </>
                         )}
                     </Button>
