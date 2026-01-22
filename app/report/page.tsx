@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Send, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Send, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,6 +68,10 @@ export default function ReportPage() {
             formData.append("time", data.time || "");
             formData.append("email", data.email);
             formData.append("type", activeTab.toUpperCase());
+
+            // Hybrid Data Entry Fields (for Documents/IDs)
+            if (data.studentName) formData.append("studentName", data.studentName);
+            if (data.rollNumber) formData.append("rollNumber", data.rollNumber);
 
             if (imageFile) {
                 formData.append("image", imageFile);
@@ -243,7 +247,8 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
         time: "",
         description: "",
         email: "",
-
+        studentName: "",
+        rollNumber: "",
     });
 
     const handleInputChange = (field: keyof ItemFormData, value: string) => {
@@ -360,6 +365,73 @@ function ReportForm({ type, onSubmit, isSubmitting }: ReportFormProps) {
                     )}
                 </div>
             </motion.div>
+
+            {/* Conditional Document Details Section */}
+            <AnimatePresence>
+                {(formData.category === "documents" ||
+                    formData.category === "id-cards") && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0, y: -10 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -10 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                        >
+                            <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-lg">ℹ️</span>
+                                    <h3 className="text-sm font-semibold text-blue-900">
+                                        Document Details (Helps in returning item faster)
+                                    </h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="studentName" className="text-smiu-navy font-medium text-sm">
+                                            Student Name
+                                        </Label>
+                                        <Input
+                                            id="studentName"
+                                            value={formData.studentName || ""}
+                                            onChange={(e) => handleInputChange("studentName", e.target.value)}
+                                            placeholder="e.g. Ali Ahmed"
+                                            className="border-blue-200 focus-visible:ring-blue-400 bg-white"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="rollNumber" className="text-smiu-navy font-medium text-sm">
+                                            CMS / Roll ID
+                                        </Label>
+                                        <Input
+                                            id="rollNumber"
+                                            value={formData.rollNumber || ""}
+                                            onChange={(e) => handleInputChange("rollNumber", e.target.value)}
+                                            placeholder="e.g. CSC-2024-123"
+                                            className="border-blue-200 focus-visible:ring-blue-400 bg-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => console.log("Trigger AI Scan")}
+                                        className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        ✨ Scan from Image
+                                    </Button>
+                                    <p className="text-xs text-blue-600 mt-2">
+                                        Upload an image first, then click to auto-extract details
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+            </AnimatePresence>
 
             {/* Date & Time */}
             <motion.div

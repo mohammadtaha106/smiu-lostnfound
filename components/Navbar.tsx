@@ -1,24 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, Plus, User } from "lucide-react";
+import { Menu, X, Search, Plus, User, LogOut, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { authClient } from "@/lib/auth-client";
 
-interface NavbarProps {
-    onSearch?: (query: string) => void;
-}
-
-export function Navbar({ onSearch }: NavbarProps) {
+export function Navbar() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ✅ Better Auth Session
+    const { data: session, isPending } = authClient.useSession();
+
+    // ✅ Debounced Search - 500ms delay
+    useEffect(() => {
+        // Clear previous timer
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        debounceTimerRef.current = setTimeout(() => {
+            const currentQuery = searchParams.get("q") || "";
+
+            // ⚠️ Only update if search query actually changed
+            if (searchQuery.trim() !== currentQuery) {
+                const params = new URLSearchParams(searchParams.toString());
+
+                if (searchQuery.trim()) {
+                    params.set("q", searchQuery.trim());
+                } else {
+                    params.delete("q");
+                }
+
+                router.push(`/?${params.toString()}`, { scroll: false });
+            }
+        }, 500);
+
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, [searchQuery]); // 🔥 Only depend on searchQuery
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
-        onSearch?.(e.target.value);
+    };
+
+    const handleLogout = async () => {
+        await authClient.signOut();
+        router.push("/");
     };
 
     return (
@@ -58,7 +105,7 @@ export function Navbar({ onSearch }: NavbarProps) {
                                 type="text"
                                 placeholder="Search lost or found items..."
                                 value={searchQuery}
-                                onChange={handleSearch}
+                                onChange={handleSearchChange}
                                 className="pl-10 bg-secondary border-none focus-visible:ring-smiu-navy"
                             />
                         </div>
@@ -74,14 +121,56 @@ export function Navbar({ onSearch }: NavbarProps) {
                                 </Button>
                             </motion.div>
                         </Link>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Avatar className="h-9 w-9 border-2 border-smiu-gold cursor-pointer">
-                                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" />
-                                <AvatarFallback>
-                                    <User className="h-4 w-4" />
-                                </AvatarFallback>
-                            </Avatar>
-                        </motion.div>
+
+                        {/* Auth Section */}
+                        {!isPending && (
+                            session ? (
+                                // Logged In User - Dropdown Menu
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                            <Avatar className="h-9 w-9 border-2 border-smiu-gold cursor-pointer">
+                                                <AvatarImage src={session.user.image || undefined} />
+                                                <AvatarFallback className="bg-smiu-navy text-white">
+                                                    {session.user.name?.charAt(0).toUpperCase() || "U"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </motion.div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuLabel>
+                                            <div className="flex flex-col">
+                                                <p className="text-sm font-medium text-smiu-navy">{session.user.name}</p>
+                                                <p className="text-xs text-slate-500">{session.user.email}</p>
+                                            </div>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="cursor-pointer">
+                                            <FileText className="mr-2 h-4 w-4" />
+                                            My Posts
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="cursor-pointer text-red-600 focus:text-red-600"
+                                            onClick={handleLogout}
+                                        >
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Logout
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                // Guest User - Login Button
+                                <Link href="/login">
+                                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                        <Button variant="outline" className="border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white">
+                                            <User className="mr-2 h-4 w-4" />
+                                            Login
+                                        </Button>
+                                    </motion.div>
+                                </Link>
+                            )
+                        )}
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -106,7 +195,7 @@ export function Navbar({ onSearch }: NavbarProps) {
                             type="text"
                             placeholder="Search items..."
                             value={searchQuery}
-                            onChange={handleSearch}
+                            onChange={handleSearchChange}
                             className="pl-10 bg-secondary border-none focus-visible:ring-smiu-navy"
                         />
                     </div>
@@ -129,18 +218,46 @@ export function Navbar({ onSearch }: NavbarProps) {
                                     Report Item
                                 </Button>
                             </Link>
-                            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
-                                <Avatar className="h-10 w-10 border-2 border-smiu-gold">
-                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" />
-                                    <AvatarFallback>
-                                        <User className="h-5 w-5" />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-medium text-smiu-navy">Guest User</p>
-                                    <p className="text-sm text-muted-foreground">Sign in to report items</p>
-                                </div>
-                            </div>
+
+                            {/* Mobile Auth Section */}
+                            {!isPending && (
+                                session ? (
+                                    // Logged In User
+                                    <>
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+                                            <Avatar className="h-10 w-10 border-2 border-smiu-gold">
+                                                <AvatarImage src={session.user.image || undefined} />
+                                                <AvatarFallback className="bg-smiu-navy text-white">
+                                                    {session.user.name?.charAt(0).toUpperCase() || "U"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <p className="font-medium text-smiu-navy text-sm">{session.user.name}</p>
+                                                <p className="text-xs text-slate-500">{session.user.email}</p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                                            onClick={() => {
+                                                handleLogout();
+                                                setIsMenuOpen(false);
+                                            }}
+                                        >
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Logout
+                                        </Button>
+                                    </>
+                                ) : (
+                                    // Guest User
+                                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                                        <Button variant="outline" className="w-full border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white">
+                                            <User className="mr-2 h-4 w-4" />
+                                            Login
+                                        </Button>
+                                    </Link>
+                                )
+                            )}
                         </div>
                     </motion.div>
                 )}

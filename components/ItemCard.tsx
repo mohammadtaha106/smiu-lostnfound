@@ -2,9 +2,24 @@
 
 import { motion } from "framer-motion";
 import { MapPin, Calendar } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Item } from "@/lib/data";
+
+// ✅ Database-matched Type
+export interface Item {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    location: string;
+    type: string;
+    status: string;
+    imageUrl: string | null;
+    date: string | null;
+    studentName: string;
+    reporterName?: string;
+    reporterAvatar?: string;
+}
 
 interface ItemCardProps {
     item: Item;
@@ -12,86 +27,80 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
-    const isLost = item.type === "lost";
+    const isLost = item.type.toUpperCase() === "LOST";
 
     return (
         <motion.div
-            whileHover={{ scale: 1.02, y: -4 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="cursor-pointer"
+            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+            transition={{ duration: 0.2 }}
+            className="cursor-pointer h-full"
             onClick={onClick}
         >
-            <Card className="overflow-hidden h-full bg-white hover:shadow-lg transition-shadow duration-300 border-border">
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden bg-secondary">
-                    <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                    {/* Status Badge */}
-                    <div className="absolute top-3 left-3">
-                        <Badge
-                            className={`${isLost
-                                    ? "bg-smiu-burgundy hover:bg-smiu-burgundy/90"
-                                    : "bg-emerald-600 hover:bg-emerald-600/90"
-                                } text-white font-medium`}
-                        >
-                            {isLost ? "Lost" : "Found"}
-                        </Badge>
-                    </div>
-                    {/* Status indicator for claimed/resolved */}
-                    {item.status !== "active" && (
-                        <div className="absolute top-3 right-3">
-                            <Badge variant="secondary" className="bg-white/90 text-smiu-navy">
-                                {item.status === "claimed" ? "Claimed" : "Resolved"}
-                            </Badge>
+            <Card className="group overflow-hidden h-full bg-white border border-slate-200/80 hover:border-slate-300 transition-all duration-200">
+
+                {/* Compact Image - 140px instead of 192px */}
+                <div className="relative h-36 overflow-hidden bg-slate-50">
+                    {item.imageUrl ? (
+                        <img
+                            src={item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+                            <span className="text-xs text-slate-400 font-medium">No Image</span>
                         </div>
                     )}
+
+                    {/* Compact Status Badge */}
+                    <div className="absolute top-2 right-2">
+                        <Badge
+                            className={`${isLost
+                                    ? "bg-rose-500 hover:bg-rose-600"
+                                    : "bg-emerald-500 hover:bg-emerald-600"
+                                } text-white text-xs font-semibold px-2 py-0.5 border-0 shadow-sm`}
+                        >
+                            {isLost ? "LOST" : "FOUND"}
+                        </Badge>
+                    </div>
                 </div>
 
-                <CardContent className="p-4">
-                    {/* Title */}
-                    <h3 className="font-semibold text-smiu-navy text-lg leading-tight line-clamp-1 mb-2">
+                {/* Compact Content */}
+                <div className="p-3">
+
+                    {/* Category Badge - Subtle */}
+                    <Badge variant="outline" className="mb-2 text-[10px] font-medium text-slate-600 border-slate-200 bg-slate-50/50 px-2 py-0">
+                        {item.category}
+                    </Badge>
+
+                    {/* Title - Compact */}
+                    <h3 className="font-semibold text-slate-900 text-sm leading-snug line-clamp-1 mb-1.5">
                         {item.title}
                     </h3>
 
-                    {/* Description */}
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+                    {/* Description - Single Line */}
+                    <p className="text-slate-500 text-xs line-clamp-1 mb-3 leading-relaxed">
                         {item.description}
                     </p>
 
-                    {/* Meta Info */}
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                        {/* Location */}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="truncate max-w-[120px]">{item.location}</span>
+                    {/* Meta Info - Horizontal & Compact */}
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-slate-400" />
+                            <span className="truncate max-w-[100px]">{item.location}</span>
                         </div>
-
-                        {/* Date */}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>
-                                {new Date(item.date).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                })}
+                        <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-slate-400" />
+                            <span className="whitespace-nowrap">
+                                {item.date
+                                    ? new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                                    : "N/A"
+                                }
                             </span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Category Badge */}
-                    <div className="mt-3">
-                        <Badge
-                            variant="outline"
-                            className="border-smiu-navy/20 text-smiu-navy bg-smiu-navy/5"
-                        >
-                            {item.category.charAt(0).toUpperCase() + item.category.slice(1).replace("-", " ")}
-                        </Badge>
-                    </div>
-                </CardContent>
             </Card>
         </motion.div>
     );

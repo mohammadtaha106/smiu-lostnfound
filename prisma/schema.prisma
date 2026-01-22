@@ -1,26 +1,95 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGO_URI")
 }
 
-enum PostType {
-  LOST
-  FOUND
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  
+  sessions      Session[]
+  accounts      Account[]
+  posts         Post[]    // Relation: User ki posts
+  
+  @@map("user") 
 }
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  accountId             String
+  providerId            String
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
 
 model Post {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
-  type        PostType
-  category    String
+  type        String   
+  category    String   
+  status      String   @default("OPEN")
+  imageUrl    String?  
+  
+  studentName String?  
+  rollNumber  String?  
+  aiTags      String[] 
   location    String
-  images      String[]
-  userId      String
-  createdAt   @default(now())
-  updatedAt   @updatedAt
+  email       String?  
+  date        String?  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+
+  userId      String?   @db.ObjectId
+  user        User?     @relation(fields: [userId], references: [id])
 }

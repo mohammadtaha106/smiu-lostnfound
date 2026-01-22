@@ -1,6 +1,6 @@
 "use server";
 
-// import { db } from "@/lib/db";
+import { db } from "@/lib/db";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -15,6 +15,12 @@ const PostSchema = z.object({
     category: z.string(),
     location: z.string(),
     imageUrl: z.string(),
+    // Hybrid Data Entry Fields (Optional)
+    studentName: z.string().optional(),
+    rollNumber: z.string().optional(),
+    email: z.string().optional(),
+    date: z.string().optional(),
+    time: z.string().optional(),
 });
 
 // 2. The Create Function
@@ -51,6 +57,12 @@ export async function createPost(formData: FormData) {
         location: formData.get("location"),
         imageUrl: imageUrl,
         aiTags: aiTags,
+        // Hybrid Data Entry Fields
+        studentName: formData.get("studentName") || undefined,
+        rollNumber: formData.get("rollNumber") || undefined,
+        email: formData.get("email") || undefined,
+        date: formData.get("date") || undefined,
+        time: formData.get("time") || undefined,
     };
 
     // Validate Data
@@ -64,23 +76,85 @@ export async function createPost(formData: FormData) {
     try {
         console.log("🔥 Data received on Server:", validated.data);
 
-        // Mock implementation
-        /*
+        // Save to Database
         await db.post.create({
-          data: {
-            ...validated.data,
-            images: [validated.data.imageUrl],
-            userId: "dummy-user-id-for-now",
-          }
+            data: {
+                ...validated.data,
+                status: "OPEN",
+            }
         });
-        
-        revalidatePath("/");
-        */
 
-        return { success: true, message: "Post Created (Mock Mode)", data: validated.data };
+        revalidatePath("/");
+
+        return { success: true, message: "Post Created Successfully!", data: validated.data };
 
     } catch (error) {
         console.error("Database Error:", error);
         return { success: false, error: "Something went wrong" };
+    }
+}
+
+export async function getPosts(
+    searchQuery: string,
+    filterType: string,
+    page: number = 1,
+    limit: number = 12
+) {
+    try {
+        const skip = (page - 1) * limit;
+
+        const whereClause = {
+            ...(filterType !== "all" && { type: filterType.toUpperCase() }),
+            ...(searchQuery && {
+                OR: [
+                    { title: { contains: searchQuery, mode: "insensitive" as const } },
+                    { description: { contains: searchQuery, mode: "insensitive" as const } },
+                    { studentName: { contains: searchQuery, mode: "insensitive" as const } },
+                    { rollNumber: { contains: searchQuery, mode: "insensitive" as const } },
+                    { aiTags: { has: searchQuery } }
+                ]
+            })
+        };
+
+        // Get total count for pagination metadata
+        const total = await db.post.count({ where: whereClause });
+
+        const posts = await db.post.findMany({
+            where: whereClause,
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+        });
+
+        return {
+            success: true,
+            data: posts,
+            metadata: {
+                total,
+                page,
+                limit,
+                hasMore: skip + posts.length < total
+            }
+        };
+
+    } catch (error) {
+        console.error("Error fetching posts:", error);
+        return { success: false, error: "Failed to fetch posts" };
+    }
+}
+
+export async function getPostById(id: string) {
+    try {
+
+        const post = await db.post.findUnique({
+            where: {
+                id: id,
+            }
+        })
+        return { success: true, data: post };
+
+    } catch (error) {
+        console.error("Error fetching single post:", error);
+        return { success: false, error: "Item not found" };
     }
 }
