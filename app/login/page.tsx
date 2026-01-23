@@ -1,30 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Chrome, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleGoogleLogin = async () => {
-        setIsLoading(true);
-        try {
-            await authClient.signIn.social({
-                provider: "google",
-                callbackURL: "/",
-            });
-        } catch (error) {
-            console.error("Login failed:", error);
-            setIsLoading(false);
-        }
-    };
+// app/login/page.tsx
+const handleGoogleLogin = async () => {
+  
+  await authClient.signIn.social({
+    provider: "google",
+    callbackURL: "/",
+  });
+};
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">

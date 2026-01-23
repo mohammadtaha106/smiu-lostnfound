@@ -5,6 +5,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { generateKeywords } from "@/lib/gemini";
+import { auth } from "@/lib/auth";
 
 
 // 1. Zod Schema (Validation)
@@ -25,6 +26,11 @@ const PostSchema = z.object({
 
 // 2. The Create Function
 export async function createPost(formData: FormData) {
+    const session = await auth.api.getSession();
+
+    if (!session?.user) {
+        return { success: false, error: "Unauthorized" };
+    }
     const imageFile = formData.get("image") as File;
     let imageUrl = "";
 
@@ -81,6 +87,7 @@ export async function createPost(formData: FormData) {
             data: {
                 ...validated.data,
                 status: "OPEN",
+                userId: session?.user.id,
             }
         });
 
@@ -143,6 +150,8 @@ export async function getPosts(
     }
 }
 
+
+
 export async function getPostById(id: string) {
     try {
 
@@ -156,5 +165,39 @@ export async function getPostById(id: string) {
     } catch (error) {
         console.error("Error fetching single post:", error);
         return { success: false, error: "Item not found" };
+    }
+}
+
+export async function deletePost(postId:string , userId:string){
+    try {
+        await db.post.delete({
+            where: {
+                id: postId,
+                userId: userId,
+            }
+        })
+        revalidatePath("/dashboard")
+        return { success: true, message: "Post deleted successfully" };
+    } catch (error) {
+        console.error("Error deleting post:", error);
+        return { success: false, error: "Failed to delete post" };
+    }
+}
+export async function markAsResolved(postId:string , userId:string){
+    try {
+        await db.post.update({
+            where: {
+                id: postId,
+                userId: userId,
+            },
+            data: {
+                status: "RESOLVED",
+            }
+        })
+        revalidatePath("/dashboard")
+        return { success: true, message: "Post marked as resolved successfully" };
+    } catch (error) {
+        console.error("Error marking post as resolved:", error);
+        return { success: false, error: "Failed to mark post as resolved" };
     }
 }

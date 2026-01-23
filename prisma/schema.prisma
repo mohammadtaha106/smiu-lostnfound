@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,10 +7,11 @@ datasource db {
   url      = env("MONGO_URI")
 }
 
+// 👇 USER: @db.ObjectId hata diya, sirf String rakha hai
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @map("_id") 
   name          String
-  email         String
+  email         String    @unique
   emailVerified Boolean
   image         String?
   createdAt     DateTime
@@ -20,31 +19,32 @@ model User {
   
   sessions      Session[]
   accounts      Account[]
-  posts         Post[]    // Relation: User ki posts
-  
-  @@map("user") 
+  posts         Post[]    
+
+  @@map("user")
 }
 
+// 👇 SESSION: yahan bhi IDs plain String hongi
 model Session {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @map("_id")
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime
   updatedAt DateTime
   ipAddress String?
   userAgent String?
-  userId    String   @db.ObjectId
+  userId    String   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@map("session")
 }
 
+// 👇 ACCOUNT: yahan bhi same
 model Account {
-  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
-  accountId             String
-  providerId            String
-  userId                String    @db.ObjectId
+  id                    String    @id @map("_id")
+  accountId             String    
+  providerId            String    
+  userId                String    
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
@@ -59,27 +59,28 @@ model Account {
   @@map("account")
 }
 
+// 👇 VERIFICATION
 model Verification {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  id         String    @id @map("_id")
   identifier String
-  value      String
-  expiresAt  DateTime
+  value      String    
+  expiresAt  DateTime  
   createdAt  DateTime?
   updatedAt  DateTime?
 
   @@map("verification")
 }
 
-
+// 👇 POST: userId ab plain string lega (User se match krne k liye)
 model Post {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId 
   title       String
   description String
   type        String   
   category    String   
   status      String   @default("OPEN")
   imageUrl    String?  
-  
+time        String?
   studentName String?  
   rollNumber  String?  
   aiTags      String[] 
@@ -89,7 +90,7 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-
-  userId      String?   @db.ObjectId
+  // 👇 Relation Fix: userId se @db.ObjectId hatana lazmi hai
+  userId      String?   
   user        User?     @relation(fields: [userId], references: [id])
 }

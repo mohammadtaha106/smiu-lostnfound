@@ -5,7 +5,7 @@ import { MapPin, Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-// ✅ Database-matched Type
+
 export interface Item {
     id: string;
     title: string;
@@ -16,9 +16,9 @@ export interface Item {
     status: string;
     imageUrl: string | null;
     date: string | null;
-    studentName: string;
-    reporterName?: string;
-    reporterAvatar?: string;
+    studentName: string | null;
+    reporterName?: string | null;
+    reporterAvatar?: string | null;
 }
 
 interface ItemCardProps {
