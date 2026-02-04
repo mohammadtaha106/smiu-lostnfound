@@ -26,13 +26,11 @@ export const auth = betterAuth({
         expiresIn: 60 * 60 * 24 * 7, // 7 days
         updateAge: 60 * 60 * 24, // 1 day - refresh session daily
     },
-    // Advanced settings - FIX for __Secure- prefix issue
+    // Advanced settings - let Better Auth use default __Secure- prefix in production
     advanced: {
         useSecureCookies: process.env.NODE_ENV === "production",
         crossSubDomainCookies: {
             enabled: false,
         },
-        // ✅ Disable __Secure- prefix while keeping cookies secure
-        cookiePrefix: "better-auth",
     },
 });
