@@ -27,27 +27,42 @@ export default function OnboardingPage() {
     // Check if user has already completed onboarding
     useEffect(() => {
         const checkProfile = async () => {
+            console.log("🔍 [Onboarding] Starting profile check...");
+            console.log("📊 [Onboarding] Session:", session);
+            console.log("🔄 [Onboarding] isPending:", isPending);
+
             if (!session?.user) {
                 if (!isPending) {
+                    console.log("❌ [Onboarding] No session found, redirecting to /login");
                     router.push("/login");
+                } else {
+                    console.log("⏳ [Onboarding] Session is loading...");
                 }
                 return;
             }
 
+            console.log("✅ [Onboarding] Session found:", {
+                userId: session.user.id,
+                email: session.user.email,
+                name: session.user.name,
+            });
+
             try {
-                // Fetch fresh user data from database
+                console.log("🌐 [Onboarding] Fetching /api/user/check-profile...");
                 const response = await fetch("/api/user/check-profile");
                 const result = await response.json();
 
+                console.log("📦 [Onboarding] API Response:", result);
+
                 if (result.success && result.hasCompletedOnboarding) {
-                    // User already has roll number, redirect to home
+                    console.log("✅ [Onboarding] User has completed onboarding, redirecting to /");
                     router.push("/");
                 } else {
-                    // User needs to complete onboarding
+                    console.log("⚠️ [Onboarding] User needs to complete onboarding");
                     setIsCheckingProfile(false);
                 }
             } catch (error) {
-                console.error("Error checking profile:", error);
+                console.error("❌ [Onboarding] Error checking profile:", error);
                 setIsCheckingProfile(false);
             }
         };

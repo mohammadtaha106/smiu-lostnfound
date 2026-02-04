@@ -16,11 +16,20 @@ export default function LoginPage() {
 
     // app/login/page.tsx
     const handleGoogleLogin = async () => {
-
-        await authClient.signIn.social({
-            provider: "google",
-            callbackURL: "/onboarding", // Redirect to onboarding after login
+        console.log("🔐 [Login] Starting Google OAuth...");
+        console.log("🌐 [Login] Environment:", {
+            authUrl: process.env.NEXT_PUBLIC_APP_URL,
         });
+
+        try {
+            await authClient.signIn.social({
+                provider: "google",
+                callbackURL: "/onboarding", // Redirect to onboarding after login
+            });
+            console.log("✅ [Login] Google OAuth initiated");
+        } catch (error) {
+            console.error("❌ [Login] OAuth error:", error);
+        }
     };
 
     return (

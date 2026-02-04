@@ -54,27 +54,49 @@ export default function DashboardPage() {
 
     // Protected route check
     useEffect(() => {
+        console.log("🔐 [Dashboard] Session check...");
+        console.log("📊 [Dashboard] Session:", session);
+        console.log("🔄 [Dashboard] isPending:", isPending);
+
         if (!isPending && !session) {
+            console.log("❌ [Dashboard] No session, redirecting to /login");
             router.push("/login");
+        } else if (session) {
+            console.log("✅ [Dashboard] Session valid, user:", {
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.name,
+            });
         }
     }, [session, isPending, router]);
 
     // Fetch user's items
     useEffect(() => {
         const fetchMyItems = async () => {
-            if (!session?.user) return;
+            console.log("📦 [Dashboard] Fetching user items...");
+
+            if (!session?.user) {
+                console.log("⚠️ [Dashboard] No session.user, skipping fetch");
+                return;
+            }
+
+            console.log("🌐 [Dashboard] Calling /api/user/my-posts...");
 
             try {
                 const response = await fetch("/api/user/my-posts");
                 const result = await response.json();
 
+                console.log("📦 [Dashboard] API Response:", result);
+
                 if (result.success) {
+                    console.log("✅ [Dashboard] Items fetched:", result.data.length, "items");
                     setItems(result.data);
                 } else {
+                    console.error("❌ [Dashboard] Failed to fetch:", result.error);
                     toast.error("Failed to fetch your items");
                 }
             } catch (error) {
-                console.error("Failed to fetch items:", error);
+                console.error("❌ [Dashboard] Fetch error:", error);
                 toast.error("Failed to connect to server");
             } finally {
                 setLoading(false);
@@ -82,7 +104,10 @@ export default function DashboardPage() {
         };
 
         if (session) {
+            console.log("✅ [Dashboard] Session exists, fetching items...");
             fetchMyItems();
+        } else {
+            console.log("⚠️ [Dashboard] No session, not fetching items");
         }
     }, [session]);
 
