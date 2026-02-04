@@ -26,7 +26,7 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // 1 day
 },
 advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
+   useSecureCookies: false, 
     cookiePrefix: "better-auth", 
     crossSubDomainCookies: {
         enabled: false,
