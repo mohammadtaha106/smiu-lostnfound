@@ -14,6 +14,8 @@ model User {
   email         String    @unique
   emailVerified Boolean
   image         String?
+  rollNumber    String?   // 🎓 Student Roll Number (validated in API)
+  phone         String?   // 📞 Contact Number
   createdAt     DateTime
   updatedAt     DateTime
   
@@ -22,6 +24,7 @@ model User {
   posts         Post[]    
 
   @@map("user")
+  @@index([rollNumber]) // Index for faster lookups
 }
 
 // 👇 SESSION: yahan bhi IDs plain String hongi
@@ -86,6 +89,7 @@ time        String?
   aiTags      String[] 
   location    String
   email       String?  
+  phone       String?  // 📞 Contact Number for this post
   date        String?  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

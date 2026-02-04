@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Send, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Loader2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,7 @@ import { z } from "zod";
 import { createPost } from "@/actions/post.actions";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -81,17 +82,17 @@ export default function ReportPage() {
                         <p className="text-gray-500 mb-6">
                             You need to sign in with your Google account to report a lost or found item.
                         </p>
-                        
-                        <Button 
-                            onClick={() => authClient.signIn.social({ 
-                                provider: "google", 
+
+                        <Button
+                            onClick={() => authClient.signIn.social({
+                                provider: "google",
                                 callbackURL: "/report" // Login k baad wapis yahi layega
                             })}
                             className="w-full bg-smiu-gold text-smiu-navy hover:bg-amber-500 font-bold mb-3"
                         >
                             Sign in with Google
                         </Button>
-                        
+
                         <Link href="/">
                             <Button variant="ghost" className="w-full">
                                 Back to Home
@@ -117,6 +118,7 @@ export default function ReportPage() {
             formData.append("time", data.time || "");
             formData.append("email", data.email);
             formData.append("type", activeTab.toUpperCase());
+            if (data.phone) formData.append("phone", data.phone);
             if (data.studentName) formData.append("studentName", data.studentName);
             if (data.rollNumber) formData.append("rollNumber", data.rollNumber);
             if (imageFile) formData.append("image", imageFile);
@@ -125,12 +127,13 @@ export default function ReportPage() {
 
             if (result.success) {
                 setSubmitted(true);
+                toast.success("Post submitted successfully! 🎉");
             } else {
-                alert("Error: " + JSON.stringify(result.error));
+                toast.error("Error: " + JSON.stringify(result.error));
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to connect to server");
+            toast.error("Failed to connect to server");
         } finally {
             setIsSubmitting(false);
         }
@@ -139,7 +142,7 @@ export default function ReportPage() {
     if (submitted) {
         // ... (Your existing Success UI is perfect) ...
         return (
-             <div className="min-h-screen bg-secondary/30">
+            <div className="min-h-screen bg-secondary/30">
                 <Navbar />
                 <main className="pt-24 pb-16 px-4">
                     <motion.div
@@ -147,8 +150,8 @@ export default function ReportPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="max-w-lg mx-auto text-center"
                     >
-                         {/* ... Your Success UI SVG & Text ... */}
-                         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
+                        {/* ... Your Success UI SVG & Text ... */}
+                        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
                             <span className="text-4xl">✅</span>
                         </div>
                         <h1 className="text-2xl font-bold text-smiu-navy mb-2">Report Submitted!</h1>
@@ -191,18 +194,18 @@ export default function ReportPage() {
 
                                     {/* 👇 Pass User Details to Form for Auto-fill */}
                                     <TabsContent value="lost">
-                                        <ReportForm 
-                                            type="lost" 
-                                            onSubmit={handleSubmit} 
-                                            isSubmitting={isSubmitting} 
+                                        <ReportForm
+                                            type="lost"
+                                            onSubmit={handleSubmit}
+                                            isSubmitting={isSubmitting}
                                             userEmail={session.user.email} // ✨ Auto-fill
                                             userName={session.user.name}   // ✨ Auto-fill
                                         />
                                     </TabsContent>
                                     <TabsContent value="found">
-                                        <ReportForm 
-                                            type="found" 
-                                            onSubmit={handleSubmit} 
+                                        <ReportForm
+                                            type="found"
+                                            onSubmit={handleSubmit}
                                             isSubmitting={isSubmitting}
                                             userEmail={session.user.email} // ✨ Auto-fill
                                             userName={session.user.name}   // ✨ Auto-fill
@@ -237,8 +240,9 @@ function ReportForm({ type, onSubmit, isSubmitting, userEmail, userName }: Repor
         date: "",
         time: "",
         description: "",
-        email: userEmail || "", 
-        studentName: userName || "", 
+        email: userEmail || "",
+        phone: "",
+        studentName: userName || "",
         rollNumber: "",
     });
 
@@ -403,22 +407,6 @@ function ReportForm({ type, onSubmit, isSubmitting, userEmail, userName }: Repor
                                         />
                                     </div>
                                 </div>
-
-                                <div className="pt-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => console.log("Trigger AI Scan")}
-                                        className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-                                    >
-                                        <Sparkles className="h-4 w-4" />
-                                        ✨ Scan from Image
-                                    </Button>
-                                    <p className="text-xs text-blue-600 mt-2">
-                                        Upload an image first, then click to auto-extract details
-                                    </p>
-                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -492,6 +480,7 @@ function ReportForm({ type, onSubmit, isSubmitting, userEmail, userName }: Repor
                 <ImageUpload onImageChange={(file) => setSelectedImage(file)} />
             </motion.div>
 
+
             {/* Contact Email */}
             <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="email" className="text-smiu-navy font-semibold">
@@ -513,6 +502,31 @@ function ReportForm({ type, onSubmit, isSubmitting, userEmail, userName }: Repor
                 ) : (
                     <p className="text-xs text-muted-foreground">
                         We&apos;ll use this to notify you when someone responds.
+                    </p>
+                )}
+            </motion.div>
+
+            {/* Contact Phone */}
+            <motion.div variants={itemVariants} className="space-y-2">
+                <Label htmlFor="phone" className="text-smiu-navy font-semibold">
+                    Contact Number 
+                </Label>
+                <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    placeholder="03001234567"
+                    className={`border-border focus-visible:ring-smiu-navy ${errors.phone ? "border-red-500" : ""}`}
+                />
+                {errors.phone ? (
+                    <p className="text-red-500 text-xs flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.phone}
+                    </p>
+                ) : (
+                    <p className="text-xs text-muted-foreground">
+                        📞 For direct contact (e.g., 03001234567)
                     </p>
                 )}
             </motion.div>

@@ -17,12 +17,19 @@ export const itemSchema = z.object({
     time: z.string().optional(),
     description: z
         .string()
-        .min(10, { message: "Description must be at least 10 characters." })
+        .min(5, { message: "Description must be at least 5 characters." })
         .max(1000, { message: "Description must not exceed 1000 characters." }),
     email: z.string().email({ message: "Please enter a valid email address." }),
+    phone: z
+        .string()
+        .regex(/^(\+92|0)?[0-9]{10}$/, {
+            message: "Please enter a valid phone number (e.g., 03001234567)"
+        })
+        .optional(),
     // Optional fields for documents/ID cards (hybrid data entry)
     studentName: z.string().optional(),
     rollNumber: z.string().optional(),
 });
 
 export type ItemFormData = z.infer<typeof itemSchema>;
+

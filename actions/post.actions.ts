@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { generateKeywords } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 
 // 1. Zod Schema (Validation)
@@ -20,13 +20,16 @@ const PostSchema = z.object({
     studentName: z.string().optional(),
     rollNumber: z.string().optional(),
     email: z.string().optional(),
+    phone: z.string().optional(),
     date: z.string().optional(),
     time: z.string().optional(),
 });
 
 // 2. The Create Function
 export async function createPost(formData: FormData) {
-    const session = await auth.api.getSession();
+    const session = await auth.api.getSession({
+        headers: await headers(), // ✅ Pass headers
+    });
 
     if (!session?.user) {
         return { success: false, error: "Unauthorized" };
@@ -48,13 +51,6 @@ export async function createPost(formData: FormData) {
         return { success: false, error: "Image upload failed" };
     }
 
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    console.log("🤖 AI Analyzing text...");
-    const aiTags = await generateKeywords(`${title} ${description}`);
-
-    console.log("✨ AI Generated Tags:", aiTags);
-
     const rawData = {
         title: formData.get("title"),
         description: formData.get("description"),
@@ -62,11 +58,12 @@ export async function createPost(formData: FormData) {
         category: formData.get("category"),
         location: formData.get("location"),
         imageUrl: imageUrl,
-        aiTags: aiTags,
+        aiTags: [], // Empty array - no AI tags
         // Hybrid Data Entry Fields
         studentName: formData.get("studentName") || undefined,
         rollNumber: formData.get("rollNumber") || undefined,
         email: formData.get("email") || undefined,
+        phone: formData.get("phone") || undefined,
         date: formData.get("date") || undefined,
         time: formData.get("time") || undefined,
     };
@@ -75,21 +72,58 @@ export async function createPost(formData: FormData) {
     const validated = PostSchema.safeParse(rawData);
 
     if (!validated.success) {
-        console.log("❌ Validation failed:", validated.error.flatten().fieldErrors);
+        console.log("Validation failed:", validated.error.flatten().fieldErrors);
         return { success: false, error: validated.error.flatten().fieldErrors };
     }
 
     try {
-        console.log("🔥 Data received on Server:", validated.data);
+        console.log("Data received on Server:", validated.data);
 
         // Save to Database
-        await db.post.create({
+        const newPost = await db.post.create({
             data: {
                 ...validated.data,
                 status: "OPEN",
                 userId: session?.user.id,
             }
         });
+
+        // 🎯 AUTO-NOTIFICATION: If this is a FOUND ID card with roll number
+        if (
+            validated.data.type === "FOUND" &&
+            (validated.data.category === "id-cards" || validated.data.category === "documents") &&
+            validated.data.rollNumber
+        ) {
+            console.log("🔍 Checking if owner is registered...");
+
+            // Find the owner by roll number
+            const owner = await db.user.findFirst({
+                where: {
+                    rollNumber: validated.data.rollNumber.trim(),
+                } as any,
+            }) as any;
+
+            if (owner) {
+                console.log("✅ Owner found! Sending email notification...");
+
+                // Send email notification to owner
+                const { sendEmail, emailTemplates } = await import("@/lib/email");
+                sendEmail({
+                    to: owner.email,
+                    subject: "🎉 Your ID Card Has Been Found!",
+                    html: emailTemplates.idCardFound(
+                        owner.name,
+                        validated.data.rollNumber,
+                        validated.data.location,
+                        validated.data.email || session.user.email
+                    ),
+                }).catch(err => console.error("Failed to send ID card notification:", err));
+
+                console.log("📧 Email notification sent to:", owner.email);
+            } else {
+                console.log("ℹ️ No registered user found with this roll number");
+            }
+        }
 
         revalidatePath("/");
 
@@ -168,7 +202,7 @@ export async function getPostById(id: string) {
     }
 }
 
-export async function deletePost(postId:string , userId:string){
+export async function deletePost(postId: string, userId: string) {
     try {
         await db.post.delete({
             where: {
@@ -183,7 +217,7 @@ export async function deletePost(postId:string , userId:string){
         return { success: false, error: "Failed to delete post" };
     }
 }
-export async function markAsResolved(postId:string , userId:string){
+export async function markAsResolved(postId: string, userId: string) {
     try {
         await db.post.update({
             where: {

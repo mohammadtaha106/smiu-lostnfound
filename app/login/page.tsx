@@ -3,24 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Chrome, Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { GoogleIcon } from "@/components/icons/GoogleIcon";
 
 export default function LoginPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-// app/login/page.tsx
-const handleGoogleLogin = async () => {
-  
-  await authClient.signIn.social({
-    provider: "google",
-    callbackURL: "/",
-  });
-};
+    // app/login/page.tsx
+    const handleGoogleLogin = async () => {
+
+        await authClient.signIn.social({
+            provider: "google",
+            callbackURL: "/onboarding", // Redirect to onboarding after login
+        });
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
@@ -76,7 +77,7 @@ const handleGoogleLogin = async () => {
                                 </>
                             ) : (
                                 <>
-                                    <Chrome className="mr-3 h-5 w-5" />
+                                    <GoogleIcon className="mr-3 h-5 w-5" />
                                     Continue with Google
                                 </>
                             )}

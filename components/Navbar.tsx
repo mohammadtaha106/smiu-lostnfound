@@ -105,42 +105,57 @@ export function Navbar() {
                     </div>
 
                     {/* Desktop Actions */}
-                    <div className="hidden md:flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-3">
+                        {/* Dashboard Button - Only for logged-in users */}
+                        {session && (
+                            <Link href="/dashboard">
+                                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                    <Button
+                                        variant="outline"
+                                        className="border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white gap-2"
+                                    >
+                                        <LayoutDashboard className="h-4 w-4" />
+                                        Dashboard
+                                    </Button>
+                                </motion.div>
+                            </Link>
+                        )}
+
+                        {/* Report Item Button */}
                         <Link href="/report">
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button className="bg-smiu-navy hover:bg-smiu-navy/90 text-white gap-2">
+                                <Button className="bg-smiu-gold hover:bg-smiu-gold/90 text-smiu-navy gap-2 font-semibold shadow-md">
                                     <Plus className="h-4 w-4" />
                                     Report Item
                                 </Button>
                             </motion.div>
                         </Link>
 
-                        {/* Simple Login Button */}
-                        {/* if session is true then show avatar and dropdown else show login button */}
+                        {/* User Avatar or Login */}
                         {session ? (
                             <>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                                            <Avatar className="h-8 w-8">
+                                        <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-smiu-navy/10 hover:ring-smiu-navy/30 transition-all">
+                                            <Avatar className="h-10 w-10">
                                                 {session.user.image && <AvatarImage src={session.user.image} />}
-                                                <AvatarFallback>
-                                                    <User className="h-4 w-4" />
+                                                <AvatarFallback className="bg-smiu-navy text-white font-semibold">
+                                                    {session.user.name?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56" align="end">
+                                    <DropdownMenuContent className="w-64" align="end">
                                         <DropdownMenuLabel className="font-normal">
-                                            <div className="flex items-center">
-                                                <Avatar className="h-10 w-10">
+                                            <div className="flex items-center gap-3 p-2">
+                                                <Avatar className="h-12 w-12">
                                                     {session.user.image && <AvatarImage src={session.user.image} />}
-                                                    <AvatarFallback>
-                                                        <User className="h-4 w-4" />
+                                                    <AvatarFallback className="bg-smiu-navy text-white font-semibold text-lg">
+                                                        {session.user.name?.charAt(0).toUpperCase()}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <div className="ml-2">
-                                                    <p className="text-sm font-medium leading-none">
+                                                <div className="flex flex-col space-y-1">
+                                                    <p className="text-sm font-semibold leading-none">
                                                         {session.user.name}
                                                     </p>
                                                     <p className="text-xs leading-none text-muted-foreground">
@@ -152,18 +167,19 @@ export function Navbar() {
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={() => router.push("/dashboard")}>
                                             <LayoutDashboard className="mr-2 h-4 w-4" />
-                                            <span>Dashboard</span>
+                                            <span>My Dashboard</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-                                            <FileText className="mr-2 h-4 w-4" />
-                                            <span>My Posts</span>
+                                        <DropdownMenuItem onClick={() => router.push("/report")}>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            <span>Report New Item</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                             onClick={async () => {
                                                 await authClient.signOut();
-                                                router.push("/login");
+                                                router.push("/");
                                             }}
+                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                         >
                                             <LogOut className="mr-2 h-4 w-4" />
                                             <span>Logout</span>
@@ -176,8 +192,8 @@ export function Navbar() {
                         ) : (
                             <Link href="/login">
                                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                    <Button variant="outline" className="border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white">
-                                        <User className="mr-2 h-4 w-4" />
+                                    <Button variant="outline" className="border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white gap-2">
+                                        <User className="h-4 w-4" />
                                         Login
                                     </Button>
                                 </motion.div>
@@ -224,19 +240,72 @@ export function Navbar() {
                         className="md:hidden bg-white border-t border-border"
                     >
                         <div className="px-4 py-4 space-y-3">
-                            <Link href="/report" onClick={() => setIsMenuOpen(false)}>
-                                <Button className="w-full bg-smiu-navy hover:bg-smiu-navy/90 text-white gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    Report Item
-                                </Button>
-                            </Link>
+                            {session ? (
+                                <>
+                                    {/* User Info */}
+                                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                        <Avatar className="h-10 w-10">
+                                            {session.user.image && <AvatarImage src={session.user.image} />}
+                                            <AvatarFallback className="bg-smiu-navy text-white font-semibold">
+                                                {session.user.name?.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="text-sm font-semibold">{session.user.name}</p>
+                                            <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                                        </div>
+                                    </div>
 
-                            <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                                <Button variant="outline" className="w-full border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white">
-                                    <User className="mr-2 h-4 w-4" />
-                                    Login
-                                </Button>
-                            </Link>
+                                    {/* Dashboard Button */}
+                                    <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white gap-2"
+                                        >
+                                            <LayoutDashboard className="h-4 w-4" />
+                                            My Dashboard
+                                        </Button>
+                                    </Link>
+
+                                    {/* Report Item Button */}
+                                    <Link href="/report" onClick={() => setIsMenuOpen(false)}>
+                                        <Button className="w-full bg-smiu-gold hover:bg-smiu-gold/90 text-smiu-navy gap-2 font-semibold">
+                                            <Plus className="h-4 w-4" />
+                                            Report Item
+                                        </Button>
+                                    </Link>
+
+                                    {/* Logout Button */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
+                                        onClick={async () => {
+                                            await authClient.signOut();
+                                            setIsMenuOpen(false);
+                                            router.push("/");
+                                        }}
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Logout
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/report" onClick={() => setIsMenuOpen(false)}>
+                                        <Button className="w-full bg-smiu-gold hover:bg-smiu-gold/90 text-smiu-navy gap-2 font-semibold">
+                                            <Plus className="h-4 w-4" />
+                                            Report Item
+                                        </Button>
+                                    </Link>
+
+                                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                                        <Button variant="outline" className="w-full border-smiu-navy text-smiu-navy hover:bg-smiu-navy hover:text-white gap-2">
+                                            <User className="h-4 w-4" />
+                                            Login
+                                        </Button>
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </motion.div>
                 )}

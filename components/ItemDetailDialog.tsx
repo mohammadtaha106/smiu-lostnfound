@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // 👇 Import type from ItemCard (taake DB structure match kare)
-import type { Item } from "./ItemCard"; 
+import type { Item } from "./ItemCard";
 
 interface ItemDetailDialogProps {
     item: Item | null;
@@ -30,7 +30,7 @@ export function ItemDetailDialog({ item, open, onClose }: ItemDetailDialogProps)
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white gap-0">
                 <div className="grid md:grid-cols-2 h-full">
-                    
+
                     {/* Image Section */}
                     <div className="relative h-64 md:h-full min-h-[300px] bg-gray-100">
                         {/* 👇 FIX: image ki jagah imageUrl */}
@@ -45,13 +45,13 @@ export function ItemDetailDialog({ item, open, onClose }: ItemDetailDialogProps)
                                 No Image
                             </div>
                         )}
-                        
+
                         {/* Status Badge */}
                         <div className="absolute top-4 left-4">
                             <Badge
                                 className={`${isLost
-                                        ? "bg-red-600 hover:bg-red-700"
-                                        : "bg-emerald-600 hover:bg-emerald-700"
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-emerald-600 hover:bg-emerald-700"
                                     } text-white font-medium text-sm px-3 py-1 border-0`}
                             >
                                 {isLost ? "Lost Item" : "Found Item"}
@@ -88,7 +88,7 @@ export function ItemDetailDialog({ item, open, onClose }: ItemDetailDialogProps)
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Calendar className="h-4 w-4 text-amber-500" />
-                                <span className="font-semibold">Date:</span> 
+                                <span className="font-semibold">Date:</span>
                                 {item.date ? new Date(item.date).toLocaleDateString() : "N/A"}
                             </div>
 
@@ -104,7 +104,7 @@ export function ItemDetailDialog({ item, open, onClose }: ItemDetailDialogProps)
                         {/* Reporter Info */}
                         <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 mb-4">
                             <Avatar className="h-10 w-10">
-                                <AvatarImage src={item.reporterAvatar} />
+                                <AvatarImage src={item.reporterAvatar ?? undefined} />
                                 <AvatarFallback className="bg-smiu-navy text-white">
                                     <User className="h-5 w-5" />
                                 </AvatarFallback>
@@ -121,8 +121,8 @@ export function ItemDetailDialog({ item, open, onClose }: ItemDetailDialogProps)
                         <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
                             <Button
                                 className={`w-full ${isLost
-                                        ? "bg-smiu-navy hover:bg-slate-800"
-                                        : "bg-emerald-600 hover:bg-emerald-700"
+                                    ? "bg-smiu-navy hover:bg-slate-800"
+                                    : "bg-emerald-600 hover:bg-emerald-700"
                                     } text-white gap-2`}
                             >
                                 <Mail className="h-4 w-4" />
