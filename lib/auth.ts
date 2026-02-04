@@ -12,4 +12,9 @@ export const auth = betterAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         },
     },
+    baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins: [
+        process.env.BETTER_AUTH_URL || "http://localhost:3000",
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    ],
 });
