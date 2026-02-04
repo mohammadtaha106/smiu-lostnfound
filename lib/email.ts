@@ -34,19 +34,20 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 
 // Email Templates
 export const emailTemplates = {
-    // When someone reports a found ID card
-    idCardFound: (ownerName: string, rollNumber: string, location: string, finderEmail: string) => `
+    // ID Card Found Notification
+    idCardFound: (ownerName: string, rollNumber: string, location: string, finderEmail: string, finderPhone: string) => `
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #1e3a8a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-                .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-                .button { display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-                .footer { text-align: center; margin-top: 20px; color: #64748b; font-size: 14px; }
-                .highlight { background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+                body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+                .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .header { background-color: #1e3a8a; color: white; padding: 30px; text-align: center; }
+                .content { padding: 30px; }
+                .button { display: inline-block; background-color: #1e3a8a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { background-color: #f8f8f8; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+                .highlight { background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+                .contact-box { background-color: #f0f9ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
             </style>
         </head>
         <body>
@@ -62,18 +63,23 @@ export const emailTemplates = {
                     <div class="highlight">
                         <strong>📍 Details:</strong><br>
                         <strong>Roll Number:</strong> ${rollNumber}<br>
-                        <strong>Found At:</strong> ${location}<br>
-                        <strong>Reported By:</strong> ${finderEmail}
+                        <strong>Found At:</strong> ${location}
+                    </div>
+
+                    <div class="contact-box">
+                        <strong>📞 Contact the Finder:</strong><br>
+                        <strong>Email:</strong> <a href="mailto:${finderEmail}">${finderEmail}</a><br>
+                        <strong>Phone:</strong> <a href="tel:${finderPhone}">${finderPhone}</a>
                     </div>
                     
                     <p><strong>What to do next:</strong></p>
                     <ol>
-                        <li>Contact the finder at: <a href="mailto:${finderEmail}">${finderEmail}</a></li>
+                        <li>Contact the finder via email or phone</li>
                         <li>Arrange to collect your ID card</li>
                         <li>Verify your identity when collecting</li>
                     </ol>
                     
-                    <a href="http://localhost:3000" class="button">View on SMIU Lost & Found</a>
+                    <a href="https://smiu-lostnfound.vercel.app" class="button">View on SMIU Lost & Found</a>
                     
                     <p>If you have any questions, please contact us.</p>
                 </div>
@@ -113,7 +119,7 @@ export const emailTemplates = {
                     <strong>Location:</strong> ${location}<br>
                     <strong>Contact:</strong> <a href="mailto:${finderEmail}">${finderEmail}</a></p>
                     
-                    <a href="http://localhost:3000" class="button">View Details</a>
+                    <a href="https://smiu-lostnfound.vercel.app" class="button">View Details</a>
                     
                     <p>Please verify if this is your item and contact the finder.</p>
                 </div>
@@ -160,7 +166,7 @@ export const emailTemplates = {
                         <li>Get notified when your items are found</li>
                     </ul>
                     
-                    <a href="http://localhost:3000" class="button">Start Using SMIU Lost & Found</a>
+                    <a href="https://smiu-lostnfound.vercel.app" class="button">Start Using SMIU Lost & Found</a>
                     
                     <p>If you ever lose your ID card, we'll automatically notify you when someone finds it!</p>
                 </div>

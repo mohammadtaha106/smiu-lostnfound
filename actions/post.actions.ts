@@ -16,11 +16,11 @@ const PostSchema = z.object({
     category: z.string(),
     location: z.string(),
     imageUrl: z.string(),
-    // Hybrid Data Entry Fields (Optional)
+    // Hybrid Data Entry Fields
     studentName: z.string().optional(),
     rollNumber: z.string().optional(),
     email: z.string().optional(),
-    phone: z.string().optional(),
+    phone: z.string().min(10, "Valid phone number required"), // ✅ Now required
     date: z.string().optional(),
     time: z.string().optional(),
 });
@@ -115,7 +115,8 @@ export async function createPost(formData: FormData) {
                         owner.name,
                         validated.data.rollNumber,
                         validated.data.location,
-                        validated.data.email || session.user.email
+                        validated.data.email || session.user.email,
+                        validated.data.phone // ✅ Phone number added
                     ),
                 }).catch(err => console.error("Failed to send ID card notification:", err));
 
