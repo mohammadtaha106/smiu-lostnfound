@@ -16,6 +16,8 @@ model User {
   image         String?
   rollNumber    String?   // 🎓 Student Roll Number (original format for display)
   normalizedRollNumber String? // 🔍 Normalized for case-insensitive searches
+
+  
   phone         String?   // 📞 Contact Number
   createdAt     DateTime
   updatedAt     DateTime
@@ -59,6 +61,8 @@ model Account {
   password              String?
   createdAt             DateTime
   updatedAt             DateTime
+
+
 
   @@map("account")
 }
