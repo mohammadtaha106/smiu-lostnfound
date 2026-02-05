@@ -23,6 +23,8 @@ export default async function Home({
   // Fetch real stats
   const statsResponse = await getStats();
 
+  
+
   const posts = response.data || [];
   const metadata = response.metadata || { total: 0, page: 1, limit: 12, hasMore: false };
   const stats = statsResponse.data || { itemsReturned: 0, activeListings: 0, communityMembers: 0 };
