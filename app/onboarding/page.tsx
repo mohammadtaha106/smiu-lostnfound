@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -116,14 +117,15 @@ export default function OnboardingPage() {
             const result = await response.json();
 
             if (result.success) {
+                toast.success("Profile updated successfully! 🎉");
                 // Redirect to home after successful update
                 router.push("/");
             } else {
-                alert("Error: " + (result.error || "Failed to update profile"));
+                toast.error(result.error || "Failed to update profile");
             }
         } catch (error) {
             console.error("Profile update error:", error);
-            alert("Failed to update profile. Please try again.");
+            toast.error("Failed to update profile. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -147,7 +149,7 @@ export default function OnboardingPage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-md"
             >
-                <Card className="border-slate-200 shadow-lg">
+                <Card className="bg-gradient-to-br from-white via-white to-blue-50/30 border-slate-200 shadow-lg">
                     <CardHeader className="text-center space-y-4 pb-6">
                         <div className="w-20 h-20 bg-smiu-navy/10 rounded-full flex items-center justify-center mx-auto">
                             <UserCircle className="h-10 w-10 text-smiu-navy" />

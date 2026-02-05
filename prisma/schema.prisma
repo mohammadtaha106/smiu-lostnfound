@@ -14,7 +14,8 @@ model User {
   email         String    @unique
   emailVerified Boolean
   image         String?
-  rollNumber    String?   // 🎓 Student Roll Number (validated in API)
+  rollNumber    String?   // 🎓 Student Roll Number (original format for display)
+  normalizedRollNumber String? // 🔍 Normalized for case-insensitive searches
   phone         String?   // 📞 Contact Number
   createdAt     DateTime
   updatedAt     DateTime
@@ -24,7 +25,7 @@ model User {
   posts         Post[]    
 
   @@map("user")
-  @@index([rollNumber]) // Index for faster lookups
+  @@index([normalizedRollNumber]) // Index for faster lookups
 }
 
 // 👇 SESSION: yahan bhi IDs plain String hongi
@@ -83,9 +84,10 @@ model Post {
   category    String   
   status      String   @default("OPEN")
   imageUrl    String?  
-time        String?
+  time        String?
   studentName String?  
   rollNumber  String?  
+  normalizedRollNumber String? // 🔍 Normalized for searching
   aiTags      String[] 
   location    String
   email       String?  

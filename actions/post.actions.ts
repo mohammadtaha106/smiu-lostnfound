@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { normalizeRollNumber } from "@/lib/roll-number-utils";
 
 
 // 1. Zod Schema (Validation)
@@ -79,10 +80,16 @@ export async function createPost(formData: FormData) {
     try {
         console.log("Data received on Server:", validated.data);
 
-        // Save to Database
+        // Normalize roll number if provided
+        const normalizedRollNum = validated.data.rollNumber
+            ? normalizeRollNumber(validated.data.rollNumber)
+            : undefined;
+
+        // Save to Database with normalized roll number
         const newPost = await db.post.create({
             data: {
                 ...validated.data,
+                normalizedRollNumber: normalizedRollNum,
                 status: "OPEN",
                 userId: session?.user.id,
             }
@@ -92,14 +99,14 @@ export async function createPost(formData: FormData) {
         if (
             validated.data.type === "FOUND" &&
             (validated.data.category === "id-cards" || validated.data.category === "documents") &&
-            validated.data.rollNumber
+            normalizedRollNum
         ) {
             console.log("🔍 Checking if owner is registered...");
 
-            // Find the owner by roll number
+            // Find the owner by normalized roll number (case-insensitive)
             const owner = await db.user.findFirst({
                 where: {
-                    rollNumber: validated.data.rollNumber.trim(),
+                    normalizedRollNumber: normalizedRollNum,
                 } as any,
             }) as any;
 
@@ -113,7 +120,7 @@ export async function createPost(formData: FormData) {
                     subject: "🎉 Your ID Card Has Been Found!",
                     html: emailTemplates.idCardFound(
                         owner.name,
-                        validated.data.rollNumber,
+                        validated.data.rollNumber || "",
                         validated.data.location,
                         validated.data.email || session.user.email,
                         validated.data.phone // ✅ Phone number added
@@ -146,6 +153,8 @@ export async function getPosts(
         const skip = (page - 1) * limit;
 
         const whereClause = {
+            // ✅ ONLY SHOW ACTIVE ITEMS (hide resolved ones from homepage)
+            status: "OPEN",  // "OPEN" = Active items still need help
             ...(filterType !== "all" && { type: filterType.toUpperCase() }),
             ...(searchQuery && {
                 OR: [
@@ -153,6 +162,7 @@ export async function getPosts(
                     { description: { contains: searchQuery, mode: "insensitive" as const } },
                     { studentName: { contains: searchQuery, mode: "insensitive" as const } },
                     { rollNumber: { contains: searchQuery, mode: "insensitive" as const } },
+                    { normalizedRollNumber: { contains: normalizeRollNumber(searchQuery) } },
                     { aiTags: { has: searchQuery } }
                 ]
             })

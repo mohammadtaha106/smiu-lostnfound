@@ -180,7 +180,7 @@ export default function ReportPage() {
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        <Card className="bg-white shadow-lg border-0">
+                        <Card className="bg-gradient-to-br from-white via-white to-blue-50/30 shadow-lg border border-slate-200">
                             <CardHeader className="pb-4">
                                 <CardTitle className="text-2xl font-bold text-smiu-navy">Report an Item</CardTitle>
                                 <p className="text-muted-foreground">Help the SMIU community by reporting a lost or found item.</p>
@@ -509,7 +509,7 @@ function ReportForm({ type, onSubmit, isSubmitting, userEmail, userName }: Repor
             {/* Contact Phone */}
             <motion.div variants={itemVariants} className="space-y-2">
                 <Label htmlFor="phone" className="text-smiu-navy font-semibold">
-                    Contact Number 
+                    Contact Number
                 </Label>
                 <Input
                     id="phone"

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail, emailTemplates } from "@/lib/email";
+import { normalizeRollNumber } from "@/lib/roll-number-utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -26,10 +27,13 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Check if roll number already exists for another user
+        // Normalize the roll number for comparison
+        const normalizedRollNum = normalizeRollNumber(rollNumber);
+
+        // Check if normalized roll number already exists for another user
         const existingUser = await db.user.findFirst({
             where: {
-                rollNumber: rollNumber.trim(),
+                normalizedRollNumber: normalizedRollNum,
                 NOT: {
                     id: session.user.id,
                 },
@@ -43,13 +47,14 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Update user profile
+        // Update user profile with both original and normalized roll number
         await db.user.update({
             where: {
                 id: session.user.id,
             },
             data: {
                 rollNumber: rollNumber.trim(),
+                normalizedRollNumber: normalizedRollNum,
                 phone: phone?.trim() || null,
             } as any, // Type assertion for new fields
         });

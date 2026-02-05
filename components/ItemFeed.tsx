@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ItemCard, type Item } from "./ItemCard";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Pagination } from "@/components/Pagination";
 import Link from "next/link";
 
 interface ItemFeedProps {
@@ -41,7 +39,6 @@ export function ItemFeed({ initialItems, metadata }: ItemFeedProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const currentFilter = searchParams.get("type") || "all";
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const handleTabChange = (value: string) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -52,33 +49,37 @@ export function ItemFeed({ initialItems, metadata }: ItemFeedProps) {
         router.push(`/?${params.toString()}`, { scroll: false });
     };
 
-    const handleLoadMore = () => {
-        setIsLoadingMore(true);
+    const handlePageChange = (page: number) => {
         const params = new URLSearchParams(searchParams.toString());
-        params.set("page", String(metadata.page + 1));
-        router.push(`/?${params.toString()}`);
+        params.set("page", String(page));
+        router.push(`/?${params.toString()}`, { scroll: true });
+
+        // Smooth scroll to top of feed
+        document.getElementById("feed")?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
+    const totalPages = Math.ceil(metadata.total / metadata.limit);
+
     return (
-        <section id="feed" className="py-12 px-4 bg-slate-50/50">
+        <section id="feed" className="py-12 px-4 bg-slate-50">
             <div className="max-w-7xl mx-auto">
 
                 {/* Header & Tabs */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-smiu-navy mb-2">
+                        <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 mb-2 tracking-tight">
                             Recent Listings
                         </h2>
-                        <p className="text-slate-600 text-sm">
+                        <p className="text-slate-600 text-sm leading-relaxed">
                             Showing {initialItems.length} of {metadata.total} item{metadata.total !== 1 ? "s" : ""}
                         </p>
                     </div>
 
                     <Tabs value={currentFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
-                        <TabsList className="grid w-full grid-cols-3 sm:w-auto bg-white shadow-sm">
-                            <TabsTrigger value="all" className="data-[state=active]:bg-slate-100">All</TabsTrigger>
-                            <TabsTrigger value="lost" className="data-[state=active]:bg-rose-50 data-[state=active]:text-rose-700">Lost</TabsTrigger>
-                            <TabsTrigger value="found" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700">Found</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 sm:w-auto bg-white shadow-sm border border-slate-200">
+                            <TabsTrigger value="all" className="data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">All</TabsTrigger>
+                            <TabsTrigger value="lost" className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700">Lost</TabsTrigger>
+                            <TabsTrigger value="found" className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Found</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
@@ -92,7 +93,7 @@ export function ItemFeed({ initialItems, metadata }: ItemFeedProps) {
                                 variants={containerVariants}
                                 initial="hidden"
                                 animate="visible"
-                                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8"
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8"
                             >
                                 {initialItems.map((item) => (
                                     <motion.div key={item.id} variants={cardVariants}>
@@ -103,26 +104,12 @@ export function ItemFeed({ initialItems, metadata }: ItemFeedProps) {
                                 ))}
                             </motion.div>
 
-                            {/* Load More Button */}
-                            {metadata.hasMore && (
-                                <div className="flex justify-center mt-8">
-                                    <Button
-                                        onClick={handleLoadMore}
-                                        disabled={isLoadingMore}
-                                        className="bg-smiu-navy hover:bg-slate-800 text-white px-8 py-6 text-base"
-                                        size="lg"
-                                    >
-                                        {isLoadingMore ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                Loading...
-                                            </>
-                                        ) : (
-                                            `Load More (${metadata.total - initialItems.length} remaining)`
-                                        )}
-                                    </Button>
-                                </div>
-                            )}
+                            {/* Pagination */}
+                            <Pagination
+                                currentPage={metadata.page}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
                         </>
                     ) : (
                         <motion.div

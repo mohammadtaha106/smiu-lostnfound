@@ -17,8 +17,9 @@ import {
     Mail,
     Phone,
     User,
-    AlertCircle,
-    Eye
+    Eye,
+    Tag,
+    RotateCcw
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -139,7 +140,7 @@ export default function DashboardPage() {
             }),
             {
                 loading: "Deleting post...",
-                success: "Post deleted successfully! 🗑️",
+                success: "Post deleted successfully!",
                 error: "Failed to delete post",
             }
         );
@@ -177,19 +178,58 @@ export default function DashboardPage() {
             }),
             {
                 loading: "Marking as resolved...",
-                success: "Item marked as resolved! ✅",
+                success: "Item marked as resolved successfully!",
                 error: "Failed to mark as resolved",
             }
         );
     };
 
+    const handleReopen = async (postId: string) => {
+        toast.promise(
+            new Promise(async (resolve, reject) => {
+                setActionLoading(postId);
+                try {
+                    const response = await fetch("/api/user/reopen-post", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ postId }),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        setItems(
+                            items.map((item) =>
+                                item.id === postId ? { ...item, status: "OPEN" } : item
+                            )
+                        );
+                        resolve(result);
+                    } else {
+                        reject(new Error(result.error || "Failed to reopen"));
+                    }
+                } catch (error) {
+                    console.error("Reopen error:", error);
+                    reject(error);
+                } finally {
+                    setActionLoading(null);
+                }
+            }),
+            {
+                loading: "Reopening item...",
+                success: "Item reopened successfully! It's now active again.",
+                error: "Failed to reopen item",
+            }
+        );
+    };
+
+
     // Loading state
     if (isPending || loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-smiu-navy mx-auto mb-4" />
-                    <p className="text-slate-600">Loading your dashboard...</p>
+                    <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto mb-4" strokeWidth={1.5} />
+                    <p className="text-slate-600 leading-relaxed">Loading your dashboard...</p>
                 </div>
             </div>
         );
@@ -211,7 +251,7 @@ export default function DashboardPage() {
     const foundItems = items.filter((i) => i.type === "FOUND").length;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="min-h-screen bg-slate-50">
             <Navbar />
 
             <main className="pt-24 pb-16 px-4 max-w-7xl mx-auto">
@@ -223,16 +263,16 @@ export default function DashboardPage() {
                 >
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>
-                            <h1 className="text-4xl font-bold text-smiu-navy mb-2">
-                                Welcome back, {session.user.name?.split(" ")[0]}! 👋
+                            <h1 className="text-4xl font-semibold text-slate-900 mb-2 tracking-tight">
+                                Welcome back, {session.user.name?.split(" ")[0]}!
                             </h1>
-                            <p className="text-slate-600 text-lg">
+                            <p className="text-slate-600 text-lg leading-relaxed">
                                 Manage your reported items and track their status
                             </p>
                         </div>
                         <Link href="/report">
-                            <Button className="bg-smiu-navy hover:bg-smiu-navy/90 gap-2 h-12 px-6 shadow-lg shadow-smiu-navy/20">
-                                <Plus className="h-5 w-5" />
+                            <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 h-12 px-6 shadow-lg shadow-emerald-600/20 text-white">
+                                <Plus className="h-5 w-5" strokeWidth={1.5} />
                                 Report New Item
                             </Button>
                         </Link>
@@ -289,13 +329,13 @@ export default function DashboardPage() {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="lost"
-                                    className="data-[state=active]:bg-red-600 data-[state=active]:text-white"
+                                    className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700"
                                 >
                                     Lost ({lostItems})
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="found"
-                                    className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
+                                    className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700"
                                 >
                                     Found ({foundItems})
                                 </TabsTrigger>
@@ -314,6 +354,7 @@ export default function DashboardPage() {
                                         index={index}
                                         onDelete={handleDelete}
                                         onResolve={handleResolve}
+                                        onReopen={handleReopen}
                                         isLoading={actionLoading === item.id}
                                     />
                                 ))}
@@ -355,15 +396,15 @@ function StatCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay }}
         >
-            <Card className="border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <Card className="bg-gradient-to-br from-white via-white to-blue-50/30 border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-slate-600 mb-1 font-medium">{label}</p>
-                            <p className="text-3xl font-bold text-smiu-navy">{value}</p>
+                            <p className="text-sm text-slate-600 mb-1 font-medium leading-relaxed">{label}</p>
+                            <p className="text-3xl font-semibold text-slate-900 tracking-tight">{value}</p>
                         </div>
                         <div className={`p-4 rounded-xl border-2 ${colorClasses[color]}`}>
-                            <Icon className="h-6 w-6" />
+                            <Icon className="h-6 w-6" strokeWidth={1.5} />
                         </div>
                     </div>
                 </CardContent>
@@ -378,12 +419,14 @@ function DashboardItemCard({
     index,
     onDelete,
     onResolve,
+    onReopen,
     isLoading,
 }: {
     item: DashboardItem;
     index: number;
     onDelete: (id: string) => void;
     onResolve: (id: string) => void;
+    onReopen: (id: string) => void;
     isLoading: boolean;
 }) {
     const isLost = item.type === "LOST";
@@ -397,7 +440,7 @@ function DashboardItemCard({
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ delay: index * 0.05 }}
         >
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-slate-200 group hover:-translate-y-1">
+            <Card className="bg-gradient-to-br from-white via-white to-blue-50/30 overflow-hidden hover:shadow-xl transition-all duration-300 border-slate-200 group hover:-translate-y-1">
                 {/* Image */}
                 <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200">
                     {item.imageUrl ? (
@@ -415,45 +458,45 @@ function DashboardItemCard({
                     {/* Type Badge */}
                     <Badge
                         className={`absolute top-3 left-3 ${isLost
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-green-600 hover:bg-green-700"
-                            } text-white shadow-lg`}
+                            ? "bg-amber-100 text-amber-700 border-amber-200"
+                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                            } text-xs font-semibold border shadow-sm`}
                     >
                         {item.type}
                     </Badge>
 
                     {/* Status Badge */}
                     {isResolved && (
-                        <Badge className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 border-emerald-200 shadow-lg">
-                            ✓ RESOLVED
+                        <Badge className="absolute top-3 right-3 bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm font-semibold text-xs">
+                            RESOLVED
                         </Badge>
                     )}
                 </div>
 
                 <CardContent className="p-5">
                     {/* Title */}
-                    <h3 className="font-bold text-lg text-smiu-navy mb-2 line-clamp-1">
+                    <h3 className="font-semibold text-lg text-slate-900 mb-2 line-clamp-1 tracking-tight">
                         {item.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
                         {item.description}
                     </p>
 
                     {/* Meta Info */}
                     <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                            <MapPin className="h-3.5 w-3.5 text-amber-500" />
+                            <MapPin className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.5} />
                             <span className="font-medium">{item.location}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                            <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                            <Calendar className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.5} />
                             <span>{new Date(item.date).toLocaleDateString()}</span>
                         </div>
                         {item.rollNumber && (
                             <div className="flex items-center gap-2 text-xs text-slate-600">
-                                <User className="h-3.5 w-3.5 text-purple-500" />
+                                <User className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.5} />
                                 <span>Roll: {item.rollNumber}</span>
                             </div>
                         )}
@@ -464,13 +507,13 @@ function DashboardItemCard({
                         <div className="bg-slate-50 rounded-lg p-3 mb-4 space-y-1.5">
                             {item.email && (
                                 <div className="flex items-center gap-2 text-xs text-slate-700">
-                                    <Mail className="h-3.5 w-3.5 text-blue-500" />
+                                    <Mail className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.5} />
                                     <span className="truncate">{item.email}</span>
                                 </div>
                             )}
                             {item.phone && (
                                 <div className="flex items-center gap-2 text-xs text-slate-700">
-                                    <Phone className="h-3.5 w-3.5 text-green-500" />
+                                    <Phone className="h-3.5 w-3.5 text-slate-400" strokeWidth={1.5} />
                                     <span>{item.phone}</span>
                                 </div>
                             )}
@@ -483,17 +526,19 @@ function DashboardItemCard({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="w-full border-slate-300 hover:bg-slate-50"
+                                className="w-full border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                             >
-                                <Eye className="h-4 w-4 mr-1" />
+                                <Eye className="h-4 w-4 mr-1" strokeWidth={1.5} />
                                 View
                             </Button>
                         </Link>
+
+                        {/* Resolve Button - Only for OPEN items */}
                         {!isResolved && (
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="flex-1 border-green-200 text-green-700 hover:bg-green-50"
+                                className="flex-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
                                 onClick={() => onResolve(item.id)}
                                 disabled={isLoading}
                             >
@@ -501,12 +546,33 @@ function DashboardItemCard({
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                     <>
-                                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                                        <CheckCircle2 className="h-4 w-4 mr-1" strokeWidth={1.5} />
                                         Resolve
                                     </>
                                 )}
                             </Button>
                         )}
+
+                        {/* Reopen Button - Only for RESOLVED items */}
+                        {isResolved && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-50"
+                                onClick={() => onReopen(item.id)}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <>
+                                        <RotateCcw className="h-4 w-4 mr-1" strokeWidth={1.5} />
+                                        Reopen
+                                    </>
+                                )}
+                            </Button>
+                        )}
+
                         <Button
                             variant="ghost"
                             size="sm"
@@ -517,7 +583,7 @@ function DashboardItemCard({
                             {isLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                             )}
                         </Button>
                     </div>
@@ -536,19 +602,19 @@ function EmptyState({ filter }: { filter: string }) {
             className="text-center py-20"
         >
             <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Package className="h-16 w-16 text-slate-400" />
+                <Package className="h-16 w-16 text-slate-400" strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl font-bold text-smiu-navy mb-2">
+            <h3 className="text-2xl font-semibold text-slate-900 mb-2 tracking-tight">
                 No {filter !== "all" ? filter : ""} items found
             </h3>
-            <p className="text-slate-600 mb-8 max-w-md mx-auto">
+            <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
                 {filter === "all"
                     ? "You haven't reported any items yet. Start by reporting a lost or found item."
                     : `You haven't reported any ${filter} items yet.`}
             </p>
             <Link href="/report">
-                <Button className="bg-smiu-navy hover:bg-smiu-navy/90 gap-2 h-12 px-6 shadow-lg shadow-smiu-navy/20">
-                    <Plus className="h-5 w-5" />
+                <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 h-12 px-6 shadow-lg shadow-emerald-600/20 text-white">
+                    <Plus className="h-5 w-5" strokeWidth={1.5} />
                     Report Your First Item
                 </Button>
             </Link>
